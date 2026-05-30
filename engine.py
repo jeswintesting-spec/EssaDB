@@ -432,71 +432,84 @@ class DatabaseEngine:
 
     def _execute_insert(self, query, is_recovery=False):
         table_name = query["table"]
+        rows = query["rows"]
         
         if query.get("explain"):
             plan = f"EXPLAIN PLAN FOR INSERT on '{table_name}'\n"
-            plan += f"-> Step 1: O(1) Append row to .dat file\n"
+            plan += f"-> Step 1: O(1) Append {len(rows)} row(s) to .dat file\n"
             plan += f"-> Step 2: O(log N) Insert node into {len(self.indexes.get(table_name, {}))} B-Tree(s)\n"
             plan += f"-> Step 3: Write to Undo Log"
             return plan
             
-        values = query["values"]
         if table_name not in self.tables:
             return f"Error: Table '{table_name}' does not exist."
         
         schema = self.schemas[table_name]
-        if len(values) != len(schema):
-            return f"Error: Expected {len(schema)} values, got {len(values)}."
-
-        # Primary Key Uniqueness Constraint
+        storage = self.tables[table_name]
         pk_col_name = schema[0][0]
         pk_tree = self.indexes[table_name][pk_col_name]
-        key = values[0]
         
-        existing_offset = pk_tree.search(key)
-        if existing_offset is not None:
-            storage = self.tables[table_name]
-            if storage.read_record(existing_offset) is not None:
-                return f"Constraint Error: Primary Key '{key}' already exists."
-
-        # Foreign Key Verification
-        if table_name in self.foreign_keys:
-            for fk in self.foreign_keys[table_name]:
-                col_idx = self._get_col_idx(schema, fk["col"])
-                val = values[col_idx]
+        # VALIDATE ALL ROWS FIRST
+        for values in rows:
+            if len(values) != len(schema):
+                return f"Error: Expected {len(schema)} values, got {len(values)} in row {values}."
                 
-                ref_schema = self.schemas[fk["ref_table"]]
-                ref_col_idx = self._get_col_idx(ref_schema, fk["ref_col"])
-                
-                ref_tree = self.indexes.get(fk["ref_table"], {}).get(fk["ref_col"])
-                if ref_tree:
-                    if ref_tree.search(val) is None:
-                        return f"Constraint Error: Foreign Key '{val}' not found in {fk['ref_table']}({fk['ref_col']})."
-                else:
-                    ref_storage = self.tables[fk["ref_table"]]
-                    records, _ = ref_storage.read_all()
-                    found = False
-                    for r in records:
-                        if r[ref_col_idx] == val:
-                            found = True
-                            break
-                    if not found:
-                        return f"Constraint Error: Foreign Key '{val}' not found in {fk['ref_table']}({fk['ref_col']})."
+            key = values[0]
+            existing_offset = pk_tree.search(key)
+            if existing_offset is not None:
+                if storage.read_record(existing_offset) is not None:
+                    return f"Constraint Error: Primary Key '{key}' already exists."
 
-        self._run_triggers(table_name, "INSERT", "BEFORE", new_rec=values, schema=schema)
-
-        storage = self.tables[table_name]
-        offset = storage.insert_record(values)
+            # Foreign Key Verification
+            if table_name in self.foreign_keys:
+                for fk in self.foreign_keys[table_name]:
+                    col_idx = self._get_col_idx(schema, fk["col"])
+                    val = values[col_idx]
+                    
+                    ref_schema = self.schemas[fk["ref_table"]]
+                    ref_col_idx = self._get_col_idx(ref_schema, fk["ref_col"])
+                    
+                    ref_tree = self.indexes.get(fk["ref_table"], {}).get(fk["ref_col"])
+                    if ref_tree:
+                        if ref_tree.search(val) is None:
+                            return f"Constraint Error: Foreign Key '{val}' not found in {fk['ref_table']}({fk['ref_col']})."
+                    else:
+                        ref_storage = self.tables[fk["ref_table"]]
+                        records, _ = ref_storage.read_all()
+                        found = False
+                        for r in records:
+                            if r[ref_col_idx] == val:
+                                found = True
+                                break
+                        if not found:
+                            return f"Constraint Error: Foreign Key '{val}' not found in {fk['ref_table']}({fk['ref_col']})."
+                            
+        # EXECUTE ALL ROWS
+        inserted_count = 0
+        inserted_records_for_undo = []
         
-        for col_name, b_tree in self.indexes[table_name].items():
-            col_idx = self._get_col_idx(schema, col_name)
-            b_tree.insert(values[col_idx], offset)
-        
-        if not is_recovery:
-            self.undo_stack.append({"type": "INSERT", "table": table_name, "offset": offset})
+        for values in rows:
+            self._run_triggers(table_name, "INSERT", "BEFORE", new_rec=values, schema=schema)
+            
+            offset = storage.insert_record(values)
+            for idx_col, b_tree in self.indexes[table_name].items():
+                idx = self._get_col_idx(schema, idx_col)
+                if idx != -1:
+                    b_tree.insert(values[idx], offset)
+            
+            self._run_triggers(table_name, "INSERT", "AFTER", new_rec=values, schema=schema)
+            inserted_count += 1
+            inserted_records_for_undo.append((offset, values))
+            
+        if inserted_count > 0 and not is_recovery:
+            self.undo_stack.append({
+                "type": "INSERT", 
+                "table": table_name, 
+                "records": inserted_records_for_undo
+            })
             self.redo_stack.clear()
-        
-        return "1 row inserted."
+            
+        return f"{inserted_count} row(s) inserted."
 
     def _apply_aggregations(self, records, combined_schema, targets, group_by_col):
         if len(targets) == 1 and targets[0]["type"] == "ALL" and not group_by_col:

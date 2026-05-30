@@ -169,36 +169,64 @@ class QueryParser:
         return {"type": "CREATE", "table": match.group(1), "columns": columns, "foreign_keys": foreign_keys}
 
     def _parse_insert(self, query):
-        match = re.match(r"INSERT INTO (\w+)\s+VALUES\s*\((.+)\)", query, re.IGNORECASE)
+        match = re.match(r"INSERT INTO (\w+)\s+VALUES\s*(.+)", query, re.IGNORECASE)
         if not match:
             raise ValueError("Syntax error in INSERT")
         table_name = match.group(1)
-        values_str = match.group(2)
+        values_block = match.group(2).strip()
         
-        values = []
-        current = ""
+        raw_rows = []
+        current_row_str = ""
         in_string = False
-        bracket_level = 0
-        brace_level = 0
+        paren_level = 0
         
-        for char in values_str:
+        for char in values_block:
             if char == "'":
                 in_string = not in_string
+                current_row_str += char
             elif not in_string:
-                if char == '{': brace_level += 1
-                elif char == '}': brace_level -= 1
-                elif char == '[': bracket_level += 1
-                elif char == ']': bracket_level -= 1
-                elif char == ',' and brace_level == 0 and bracket_level == 0:
-                    values.append(self._parse_val(current.strip()))
-                    current = ""
-                    continue
-            current += char
+                if char == '(':
+                    if paren_level > 0: current_row_str += char
+                    paren_level += 1
+                elif char == ')':
+                    paren_level -= 1
+                    if paren_level == 0:
+                        raw_rows.append(current_row_str)
+                        current_row_str = ""
+                    else:
+                        current_row_str += char
+                elif paren_level > 0:
+                    current_row_str += char
+            else:
+                current_row_str += char
+                
+        all_rows = []
+        for row_str in raw_rows:
+            values = []
+            current = ""
+            in_string = False
+            bracket_level = 0
+            brace_level = 0
             
-        if current.strip():
-            values.append(self._parse_val(current.strip()))
+            for char in row_str:
+                if char == "'":
+                    in_string = not in_string
+                elif not in_string:
+                    if char == '{': brace_level += 1
+                    elif char == '}': brace_level -= 1
+                    elif char == '[': bracket_level += 1
+                    elif char == ']': bracket_level -= 1
+                    elif char == ',' and brace_level == 0 and bracket_level == 0:
+                        values.append(self._parse_val(current.strip()))
+                        current = ""
+                        continue
+                current += char
+                
+            if current.strip():
+                values.append(self._parse_val(current.strip()))
+            all_rows.append(values)
             
-        return {"type": "INSERT", "table": table_name, "values": tuple(values)}
+        return {"type": "INSERT", "table": table_name, "rows": all_rows}
 
     def _parse_conditions(self, where_str):
         conditions = []
