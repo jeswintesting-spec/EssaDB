@@ -8,8 +8,8 @@ This manual provides a comprehensive breakdown of the EssaDB Query Language, a c
 
 Before you can run any of the SQL commands listed in this manual, you must turn on the engine and open the user interface! It's very easy:
 
-1. **Start the Engine**: Open a terminal and type `python main.py`. Leave this terminal open.
-2. **Open the App**: Open a *new* terminal window and type `python visualizer.py`. 
+1. **Start the Engine**: Open a terminal and type `python server.py`. Leave this terminal open.
+2. **Open the App**: Open a *new* terminal window and type `python visualizer.py` (or `python main.py` for a text-hacker console). 
 3. **Run Commands**: In the visualizer window that pops up, type any of the SQL commands from this manual into the big text box and click the **Execute** button to see the magic happen!
 
 ---

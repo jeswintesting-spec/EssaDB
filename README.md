@@ -35,16 +35,17 @@ cd EssaDB
 EssaDB runs in the background (like a real database server) and listens for instructions on port `9999`. 
 Open your terminal and type:
 ```bash
-python main.py
+python server.py
 ```
 *(Leave this terminal window open! This is your engine running in the background.)*
 
-### Step 3: Open the Graphical Visualizer
+### Step 3: Open the Graphical Visualizer or CLI
 Now that the server is running, you need a way to actually see and interact with your data. 
 **Open a second, new terminal window** (keep the first one running), navigate to the `EssaDB` folder, and type:
 ```bash
 python visualizer.py
 ```
+*(Alternatively, you can type `python main.py` to use the text-based hacker terminal!)*
 A beautiful dark-mode window will pop up! You can now type SQL queries, hit **Execute**, and see your data in a spreadsheet-style grid. You can even export it to CSV!
 
 ### 3. Integrating with your Web Apps
