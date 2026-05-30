@@ -40,9 +40,13 @@ FOREIGN KEY orders(user_id) REFERENCES users(id) ON DELETE CASCADE
 ## 2. Basic Data Manipulation (DML)
 
 ### Inserting Data
-The `DATETIME` type natively supports a `NOW()` evaluation macro that resolves to the system clock on the server.
+The `DATETIME` type natively supports a `NOW()` evaluation macro that resolves to the system clock on the server. You can insert one row, or securely bulk-insert multiple rows in a single command.
 ```sql
+-- Single row insert
 INSERT INTO users VALUES (1, 'Alice', 28, {"theme": "dark"}, NOW())
+
+-- Multi-row bulk insert
+INSERT INTO users VALUES (2, 'Bob', 22, {}, NOW()), (3, 'Charlie', 29, {}, NOW())
 ```
 
 ### Updating Data

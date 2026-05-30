@@ -18,7 +18,8 @@ EssaDB is built with the following advanced subsystems:
 4. **Multi-Version Concurrency Control (MVCC)**: Implements micro-row-level locking and thread-safe file pointer I/O, allowing thousands of concurrent `SELECT` readers without being blocked by `UPDATE` writers.
 5. **Multi-Model Engine**: Seamlessly parses and executes standard Relational SQL, NoSQL JSON document queries, Cypher-style Graph Network traversals, and AI Vector Cosine-Similarity searches within a single runtime.
 6. **Time-Series Compute Layer**: Features native window functions (`RUNNING_TOTAL`, `LAG`) and scalar compute functions (`UPPER`, `LENGTH`, `ROUND`).
-7. **Event-Driven Subsystem**: Native support for `BEFORE`/`AFTER` Triggers and dynamic Virtual Views.
+7. **Multi-Row Bulk Inserts**: Securely process and write multiple rows in a single compiler pass for maximum efficiency.
+8. **Event-Driven Subsystem**: Native support for `BEFORE`/`AFTER` Triggers and dynamic Virtual Views.
 
 ## 📦 Getting Started (Step-by-Step for Beginners)
 
