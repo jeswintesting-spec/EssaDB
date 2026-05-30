@@ -169,7 +169,7 @@ class QueryParser:
         return {"type": "CREATE", "table": match.group(1), "columns": columns, "foreign_keys": foreign_keys}
 
     def _parse_insert(self, query):
-        match = re.match(r"INSERT INTO (\w+) VALUES \((.+)\)", query, re.IGNORECASE)
+        match = re.match(r"INSERT INTO (\w+)\s+VALUES\s*\((.+)\)", query, re.IGNORECASE)
         if not match:
             raise ValueError("Syntax error in INSERT")
         table_name = match.group(1)
