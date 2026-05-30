@@ -20,23 +20,32 @@ EssaDB is built with the following advanced subsystems:
 6. **Time-Series Compute Layer**: Features native window functions (`RUNNING_TOTAL`, `LAG`) and scalar compute functions (`UPPER`, `LENGTH`, `ROUND`).
 7. **Event-Driven Subsystem**: Native support for `BEFORE`/`AFTER` Triggers and dynamic Virtual Views.
 
-## 📦 Getting Started
+## 📦 Getting Started (Step-by-Step for Beginners)
 
-### 1. Booting the Server
-EssaDB operates as a headless daemon listening on a TCP socket, fully supporting multi-threaded concurrent client requests.
+If you are new to programming, don't worry! Running EssaDB is incredibly simple. Just follow these steps:
 
+### Step 1: Download the Project
+First, clone this repository to your computer and navigate into the folder:
 ```bash
-# Start the database server on 127.0.0.1:9999
+git clone https://github.com/jeswintesting-spec/EssaDB.git
+cd EssaDB
+```
+
+### Step 2: Start the Database Server
+EssaDB runs in the background (like a real database server) and listens for instructions on port `9999`. 
+Open your terminal and type:
+```bash
 python main.py
 ```
+*(Leave this terminal window open! This is your engine running in the background.)*
 
-### 2. Using the GUI Visualizer
-EssaDB comes with a built-in `tkinter` Graphical User Interface (GUI) to view schemas, execute SQL queries, and export results directly to CSV.
-
+### Step 3: Open the Graphical Visualizer
+Now that the server is running, you need a way to actually see and interact with your data. 
+**Open a second, new terminal window** (keep the first one running), navigate to the `EssaDB` folder, and type:
 ```bash
-# Open the Visualizer UI
 python visualizer.py
 ```
+A beautiful dark-mode window will pop up! You can now type SQL queries, hit **Execute**, and see your data in a spreadsheet-style grid. You can even export it to CSV!
 
 ### 3. Integrating with your Web Apps
 You can use EssaDB to power your Flask, Django, or FastAPI backends! Simply drop `essadb_driver.py` into your project.
